@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.github.mjd507.faultmanagesystem.mapper.TbFaultWhatMapper">
+    <resultMap id="BaseResultMap" type="com.github.mjd507.faultmanagesystem.entity.TbFaultWhat">
+        <id column="id" jdbcType="INTEGER" property="id"/>
+        <result column="type" jdbcType="INTEGER" property="type"/>
+        <result column="describe" jdbcType="VARCHAR" property="describe"/>
+        <result column="create_at" jdbcType="TIMESTAMP" property="createAt"/>
+        <result column="update_at" jdbcType="TIMESTAMP" property="updateAt"/>
+    </resultMap>
+    <sql id="Base_Column_List">
+    id, `type`, `describe`, create_at, update_at
+  </sql>
+    <select id="selectAll" resultMap="BaseResultMap">
+        select
+        <include refid="Base_Column_List"/>
+        from tb_fault_what
+    </select>
+
+</mapper>

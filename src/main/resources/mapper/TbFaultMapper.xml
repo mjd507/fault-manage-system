@@ -1,0 +1,165 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.github.mjd507.faultmanagesystem.mapper.TbFaultMapper">
+    <resultMap id="BaseResultMap" type="com.github.mjd507.faultmanagesystem.entity.TbFault">
+        <id column="id" jdbcType="INTEGER" property="id"/>
+        <result column="when" jdbcType="TIMESTAMP" property="when"/>
+        <result column="where" jdbcType="INTEGER" property="where"/>
+        <result column="content" jdbcType="VARCHAR" property="content"/>
+        <result column="what" jdbcType="INTEGER" property="what"/>
+        <result column="what_extra" jdbcType="VARCHAR" property="whatExtra"/>
+        <result column="status" jdbcType="INTEGER" property="status"/>
+        <result column="why" jdbcType="VARCHAR" property="why"/>
+        <result column="get" jdbcType="VARCHAR" property="get"/>
+        <result column="create_at" jdbcType="TIMESTAMP" property="createAt"/>
+        <result column="update_at" jdbcType="TIMESTAMP" property="updateAt"/>
+    </resultMap>
+    <sql id="Base_Column_List">
+    id, `when`, `where`, content, what, what_extra, `status`, why, `get`, create_at, 
+    update_at
+  </sql>
+    <select id="selectByPrimaryKey" parameterType="java.lang.Integer" resultMap="BaseResultMap">
+        select
+        <include refid="Base_Column_List"/>
+        from tb_fault
+        where id = #{id,jdbcType=INTEGER}
+    </select>
+    <select id="selectByPage" resultMap="BaseResultMap">
+        select
+        <include refid="Base_Column_List"/>
+        from tb_fault
+        order by id desc
+        <if test="pageNum != null and pageSize != null">
+            limit #{pageNum,jdbcType=INTEGER}, #{pageSize,jdbcType=INTEGER}
+        </if>
+    </select>
+    <select id="selectByWhen" resultMap="BaseResultMap">
+        select
+        <include refid="Base_Column_List"/>
+        from tb_fault
+        where `when` between #{start,jdbcType=TIMESTAMP} AND #{end,jdbcType=TIMESTAMP}
+    </select>
+    <select id="cntAll" resultType="java.lang.Integer">
+        select count(*) from tb_fault;
+    </select>
+    <delete id="deleteByPrimaryKey" parameterType="java.lang.Integer">
+    delete from tb_fault
+    where id = #{id,jdbcType=INTEGER}
+  </delete>
+    <insert id="insert" keyColumn="id" keyProperty="id"
+            parameterType="com.github.mjd507.faultmanagesystem.entity.TbFault"
+            useGeneratedKeys="true">
+    insert into tb_fault (`when`, `where`, content, 
+      what, what_extra, `status`, 
+      why, `get`, create_at, 
+      update_at)
+    values (#{when,jdbcType=TIMESTAMP}, #{where,jdbcType=INTEGER}, #{content,jdbcType=VARCHAR}, 
+      #{what,jdbcType=INTEGER}, #{whatExtra,jdbcType=VARCHAR}, #{status,jdbcType=INTEGER}, 
+      #{why,jdbcType=VARCHAR}, #{get,jdbcType=VARCHAR}, #{createAt,jdbcType=TIMESTAMP}, 
+      #{updateAt,jdbcType=TIMESTAMP})
+  </insert>
+    <insert id="insertSelective" keyColumn="id" keyProperty="id"
+            parameterType="com.github.mjd507.faultmanagesystem.entity.TbFault" useGeneratedKeys="true">
+        insert into tb_fault
+        <trim prefix="(" suffix=")" suffixOverrides=",">
+            <if test="when != null">
+                `when`,
+            </if>
+            <if test="where != null">
+                `where`,
+            </if>
+            <if test="content != null">
+                content,
+            </if>
+            <if test="what != null">
+                what,
+            </if>
+            <if test="whatExtra != null">
+                what_extra,
+            </if>
+            <if test="status != null">
+                `status`,
+            </if>
+            <if test="why != null">
+                why,
+            </if>
+            <if test="get != null">
+                `get`,
+            </if>
+            <if test="createAt != null">
+                create_at,
+            </if>
+            <if test="updateAt != null">
+                update_at,
+            </if>
+        </trim>
+        <trim prefix="values (" suffix=")" suffixOverrides=",">
+            <if test="when != null">
+                #{when,jdbcType=TIMESTAMP},
+            </if>
+            <if test="where != null">
+                #{where,jdbcType=INTEGER},
+            </if>
+            <if test="content != null">
+                #{content,jdbcType=VARCHAR},
+            </if>
+            <if test="what != null">
+                #{what,jdbcType=INTEGER},
+            </if>
+            <if test="whatExtra != null">
+                #{whatExtra,jdbcType=VARCHAR},
+            </if>
+            <if test="status != null">
+                #{status,jdbcType=INTEGER},
+            </if>
+            <if test="why != null">
+                #{why,jdbcType=VARCHAR},
+            </if>
+            <if test="get != null">
+                #{get,jdbcType=VARCHAR},
+            </if>
+            <if test="createAt != null">
+                #{createAt,jdbcType=TIMESTAMP},
+            </if>
+            <if test="updateAt != null">
+                #{updateAt,jdbcType=TIMESTAMP},
+            </if>
+        </trim>
+    </insert>
+    <update id="updateByPrimaryKeySelective" parameterType="com.github.mjd507.faultmanagesystem.entity.TbFault">
+        update tb_fault
+        <set>
+            <if test="when != null">
+                `when` = #{when,jdbcType=TIMESTAMP},
+            </if>
+            <if test="where != null">
+                `where` = #{where,jdbcType=INTEGER},
+            </if>
+            <if test="content != null">
+                content = #{content,jdbcType=VARCHAR},
+            </if>
+            <if test="what != null">
+                what = #{what,jdbcType=INTEGER},
+            </if>
+            <if test="whatExtra != null">
+                what_extra = #{whatExtra,jdbcType=VARCHAR},
+            </if>
+            <if test="status != null">
+                `status` = #{status,jdbcType=INTEGER},
+            </if>
+            <if test="why != null">
+                why = #{why,jdbcType=VARCHAR},
+            </if>
+            <if test="get != null">
+                `get` = #{get,jdbcType=VARCHAR},
+            </if>
+            <if test="createAt != null">
+                create_at = #{createAt,jdbcType=TIMESTAMP},
+            </if>
+            <if test="updateAt != null">
+                update_at = #{updateAt,jdbcType=TIMESTAMP},
+            </if>
+        </set>
+        where id = #{id,jdbcType=INTEGER}
+    </update>
+</mapper>

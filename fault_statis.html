@@ -1,0 +1,383 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="Content-Security-Policy" content="default-src * self blob: data: gap:; style-src * self 'unsafe-inline' blob: data: gap:; script-src * 'self' 'unsafe-eval' 'unsafe-inline' blob: data: gap:; object-src * 'self' blob: data: gap:; img-src * self 'unsafe-inline' blob: data: gap:; connect-src self * 'unsafe-inline' blob: data: gap:; frame-src * self blob: data: gap:;">
+  <title>故障管理系统</title>
+  <link rel="icon" href="https://msstest.sankuai.com/v1/mss_45fb7920a0454e35ad83eaee356f0aac/whids-ui/static/logo.png" type="image/x-icon">
+  <script src="https://unpkg.com/vue@2.6.12/dist/vue.js"></script>
+  <link rel="stylesheet" href="https://unpkg.com/element-ui@2.15.0/lib/theme-chalk/index.css" />
+  <script src="https://unpkg.com/element-ui@2.15.0/lib/index.js"></script>
+  <script src="https://unpkg.com/axios@0.21.1/dist/axios.min.js"></script>
+  <!-- v-charts start -->
+  <script src="https://unpkg.com/echarts@5.0.1/dist/echarts.min.js"></script>
+  <script src="https://unpkg.com/v-charts@1.19.0/lib/index.min.js"></script>
+  <link rel="stylesheet" href="https://unpkg.com/v-charts@1.19.0/lib/style.min.css" />
+  <!-- v-charts end -->
+  <style>
+    .title-bar-wrapper {
+      display: flex;
+      justify-content: flex-start;
+    }
+    .fault-wrapper{
+      padding: 20px;
+      width: 60%;
+    }
+    .chart-title {
+      text-align: left;
+      color: rgb(46, 112, 181);
+      margin-top: 10px;
+      margin-bottom: 10px;
+    }
+
+  </style>
+</head>
+
+<body>
+  <div id="app">
+    <el-menu :default-active="activeIndex" class="title-bar-wrapper" mode="horizontal" @select="handleSelect">
+      <el-menu-item index="1">故障统计</el-menu-item>
+      <el-menu-item index="2">故障录入</el-menu-item>
+      <el-menu-item index="3">故障列表</el-menu-item>
+      <el-submenu index="4">
+        <template slot="title">故障定义</template>
+        <el-menu-item index="4-1">故障来源定义</el-menu-item>
+        <el-menu-item index="4-2">故障类别定义</el-menu-item>
+        <el-menu-item index="4-3">故障状态定义</el-menu-item>
+      </el-submenu>
+    </el-menu>
+    <!-- 故障统计 -->
+    <div v-if="activeIndex === '1'">
+      <div>本周故障大盘</div>
+      <div style="display: flex; width: 100%">
+        <!-- 总量故障、已解决 -->
+        <div style="flex: 1">
+          <div class="chart-title">故障状态统计</div>
+          <ve-pie :data="faultStatistic.ChartStatusCntWeek" :settings="ChartStatusCntSetting"></ve-pie>
+        </div>
+        <!-- 故障来源分布 -->
+        <div style="flex: 1">
+          <div class="chart-title">故障来源统计</div>
+          <ve-pie :data="faultStatistic.ChartWhereCntWeek"></ve-pie>
+        </div>
+        <!-- 故障类别分布 -->
+        <div style="flex: 1">
+          <div class="chart-title">故障类别统计</div>
+          <ve-pie :data="faultStatistic.ChartWhatCntWeek"></ve-pie>
+        </div>
+      </div>
+      <div>历史累计故障大盘</div>
+      <div style="display: flex; width: 100%">
+        <!-- 总量故障、已解决 -->
+        <div style="flex: 1">
+          <div class="chart-title">故障状态统计</div>
+          <ve-pie :data="faultStatistic.ChartStatusCnt" :settings="ChartStatusCntSetting"></ve-pie>
+        </div>
+        <!-- 故障来源分布 -->
+        <div style="flex: 1">
+          <div class="chart-title">故障来源统计</div>
+          <ve-pie :data="faultStatistic.ChartWhereCnt"></ve-pie>
+        </div>
+        <!-- 故障类别分布 -->
+        <div style="flex: 1">
+          <div class="chart-title">故障类别统计</div>
+          <ve-pie :data="faultStatistic.ChartWhatCnt"></ve-pie>
+        </div>
+      </div>
+    </div>
+    <!-- 故障录入 -->
+    <div class="fault-wrapper" v-if="activeIndex === '2'">
+      <el-form :rules="rules" ref="ruleForm" :model="form" label-width="80px">
+        <el-form-item label="故障日期" prop="when">
+          <el-date-picker type="datetime" v-model="form.when" placeholder="选择日期" style="width: 100%;"></el-date-picker>
+        </el-form-item>
+        <el-form-item label="故障来源" prop="where">
+          <el-select v-model="form.where" placeholder="选择故障来源">
+            <el-option v-for="item in optWhere" :key="item.id" :label="item.describe" :value="item.source"></el-option>
+          </el-select>
+        </el-form-item>
+        <el-form-item label="故障内容" prop="content">
+          <el-input v-model="form.content" type="textarea"></el-input>
+        </el-form-item>
+        <el-form-item label="故障类别" prop="what">
+          <el-select v-model="form.what" placeholder="选择故障类别">
+            <el-option v-for="item in optWhat" :key="item.id" :label="item.describe" :value="item.type"></el-option>
+          </el-select>
+        </el-form-item>
+        <el-form-item label="类别详细" prop="whatExtra">
+          <el-input placeholder="可不填，如果类别比较大，比如上游故障，这里可以继续具体到 kafka、es 等具体组件故障" v-model="form.whatExtra" type="textarea"></el-input>
+        </el-form-item>
+        <el-form-item label="故障状态" prop="status">
+          <el-select v-model="form.status" placeholder="选择故障状态">
+            <el-option v-for="item in optStatus" :key="item.id" :label="item.describe" :value="item.code"></el-option>
+          </el-select>
+        </el-form-item>
+        <el-form-item label="故障原因" prop="why">
+          <el-input v-model="form.why" type="textarea"></el-input>
+        </el-form-item>
+        <el-form-item label="经验总结" prop="get">
+          <el-input v-model="form.get" type="textarea"></el-input>
+        </el-form-item>
+        <el-form-item>
+          <el-button type="primary" @click="onSubmit('ruleForm')">立即录入</el-button>
+          <el-button @click="resetForm('ruleForm')">重置</el-button>
+        </el-form-item>
+      </el-form>
+    </div>
+    <!-- 故障列表 -->
+    <div v-if="activeIndex === '3'">
+      <el-table :data="faultList">
+        <el-table-column prop="when" label="日期" width="100">
+        </el-table-column>
+        <el-table-column prop="where" label="故障来源" width="100">
+        </el-table-column>
+        <el-table-column prop="content" label="故障内容" width="200">
+        </el-table-column>
+        <el-table-column prop="what" label="故障类别" width="100">
+        </el-table-column>
+        <el-table-column prop="whatExtra" label="故障类别详细" width="150">
+        </el-table-column>
+        <el-table-column prop="status" label="故障状态" width="100">
+        </el-table-column>
+        <el-table-column prop="why" label="故障原因" width="200">
+        </el-table-column>
+        <el-table-column prop="get" label="经验总结" width="200">
+        </el-table-column>
+      </el-table>
+      <el-pagination small :page-size.sync="pageSize" :current-page.sync="pageNum" layout="prev, pager, next" :total="faultCnt" @current-change="onFaultListPageChange">
+      </el-pagination>
+    </div>
+    <!-- 故障来源定义列表 -->
+    <div class="fault-wrapper" v-if="activeIndex === '4-1'">
+      <el-table :data="optWhere">
+        <el-table-column prop="source" label="code" width="180">
+        </el-table-column>
+        <el-table-column prop="describe" label="故障来源" width="180">
+        </el-table-column>
+      </el-table>
+    </div>
+    <!-- 故障类别定义列表 -->
+    <div class="fault-wrapper" v-if="activeIndex === '4-2'">
+      <el-table :data="optWhat">
+        <el-table-column prop="type" label="code" width="180">
+        </el-table-column>
+        <el-table-column prop="describe" label="故障类别" width="180">
+        </el-table-column>
+      </el-table>
+    </div>
+    <!-- 故障状态定义 -->
+    <div class="fault-wrapper" v-if="activeIndex === '4-3'">
+      <el-table :data="optStatus">
+        <el-table-column prop="code" label="code" width="180">
+        </el-table-column>
+        <el-table-column prop="describe" label="故障状态" width="180">
+        </el-table-column>
+      </el-table>
+    </div>
+  </div>
+</body>
+<script>
+const ApiPrefix = 'http://localhost:8080/fault'
+new Vue({
+  el: '#app',
+  data: function() {
+    this.ChartStatusCntSetting = {
+      level: [
+        ['解决中', '已解决', '未解决'],
+        ['总故障数']
+      ]
+    }
+    return {
+      activeIndex: "1",
+      form: {
+        when: '',
+        where: '',
+        content: '',
+        what: '',
+        whatExtra: '',
+        status: '',
+        why: '',
+        get: ''
+      },
+      rules: {
+        when: [
+          { type: 'date', required: true, message: '请选择故障发生日期', trigger: 'blur' },
+        ],
+        where: [
+          { required: true, message: '请选择故障来源', trigger: 'blur' }
+        ],
+        content: [
+          { required: true, message: '请输入故障内容', trigger: 'blur' }
+        ],
+        what: [
+          { required: true, message: '请选择故障类型', trigger: 'blur' }
+        ],
+        status: [
+          { required: true, message: '请选择故障状态', trigger: 'blur' }
+        ],
+        why: [
+          { required: false, message: '', trigger: 'blur' }
+        ],
+        get: [
+          { required: false, message: '', trigger: 'blur' }
+        ]
+      },
+      optWhat: [],
+      optWhere: [],
+      optStatus: [],
+      // 故障列表
+      faultList: [],
+      faultCnt: 0,
+      pageNum: 1,
+      pageSize: 10,
+      // 故障统计
+      faultStatistic: {
+        ChartStatusCnt: {
+          columns: ['故障状态', '故障数量'],
+          rows: []
+        },
+        ChartWhereCnt: {
+          columns: ["故障来源", '故障数量'],
+          rows: []
+        },
+        ChartWhatCnt: {
+          columns: ["故障类别", '故障数量'],
+          rows: []
+        },
+
+        ChartStatusCntWeek: {
+          columns: ['故障状态', '故障数量'],
+          rows: []
+        },
+        ChartWhereCntWeek: {
+          columns: ["故障来源", '故障数量'],
+          rows: []
+        },
+        ChartWhatCntWeek: {
+          columns: ["故障类别", '故障数量'],
+          rows: []
+        },
+      }
+    }
+  },
+  created: function() {
+    console.log('vue created')
+  },
+  mounted() {
+    axios
+      .get(ApiPrefix + '/what')
+      .then(res => {
+        this.optWhat = res.data.data;
+      });
+    axios
+      .get(ApiPrefix + '/where')
+      .then(res => {
+        this.optWhere = res.data.data;
+      });
+    axios
+      .get(ApiPrefix + '/status')
+      .then(res => {
+        this.optStatus = res.data.data;
+      });
+    this.getFaultStatistic();
+  },
+  methods: {
+    handleSelect(idx) {
+      console.log(idx)
+      this.activeIndex = idx
+      if (this.activeIndex === '1') {
+        // 故障统计
+        this.getFaultStatistic();
+      } else if (this.activeIndex === '3') {
+        // 故障列表 
+        this.getFaultList();
+      }
+    },
+    getFaultStatistic() {
+      const genRows = (StatusCnt, WhereCnt, WhatCnt) => {
+        const statusCntRows = [];
+        const whereCntRows = [];
+        const whatCntRows = [];
+        for (let cnt in StatusCnt) {
+          statusCntRows.push({
+            "故障状态": `${cnt}`,
+            "故障数量": StatusCnt[`${cnt}`]
+          })
+        }
+        for (let cnt in WhereCnt) {
+          whereCntRows.push({
+            "故障来源": `${cnt}`,
+            "故障数量": WhereCnt[`${cnt}`]
+          })
+        }
+        for (let cnt in WhatCnt) {
+          whatCntRows.push({
+            "故障类别": `${cnt}`,
+            "故障数量": WhatCnt[`${cnt}`]
+          })
+        }
+        return { statusCntRows, whereCntRows, whatCntRows }
+      }
+      axios.get(ApiPrefix + "/statistic").then((res) => {
+        const { allFault, weekFault } = res.data.data;
+        let allFaultStastic = genRows(allFault.StatusCnt, allFault.WhereCnt, allFault.WhatCnt);
+        this.faultStatistic.ChartStatusCnt.rows = allFaultStastic.statusCntRows;
+        this.faultStatistic.ChartWhereCnt.rows = allFaultStastic.whereCntRows;
+        this.faultStatistic.ChartWhatCnt.rows = allFaultStastic.whatCntRows;
+
+        let weekFaultStatistic = genRows(weekFault.StatusCnt, weekFault.WhereCnt, weekFault.WhatCnt);
+        this.faultStatistic.ChartStatusCntWeek.rows = weekFaultStatistic.statusCntRows;
+        this.faultStatistic.ChartWhereCntWeek.rows = weekFaultStatistic.whereCntRows;
+        this.faultStatistic.ChartWhatCntWeek.rows = weekFaultStatistic.whatCntRows;
+      })
+    },
+    onSubmit(formName) {
+      this.$refs[formName].validate((valid) => {
+        if (valid) {
+          axios.post(ApiPrefix + "/insert", this.form).then((res) => {
+            if (res.data.code === 200) {
+              this.$message({
+                message: '录入成功',
+                type: 'success'
+              });
+              this.handleSelect('2-4')
+            }
+          })
+        } else {
+          console.log('error submit!!');
+          return false;
+        }
+      });
+    },
+    resetForm(formName) {
+      this.$refs[formName].resetFields();
+    },
+    onFaultListPageChange(newPage) {
+      this.pageNum = newPage;
+      console.log(newPage)
+      this.getFaultList();
+    },
+    getFaultList() {
+      axios.get(ApiPrefix + "/list", {
+        params: {
+          pageNum: this.pageNum,
+          pageSize: this.pageSize
+        }
+      }).then((res) => {
+        this.faultList = res.data.data.list.map(item => {
+          item.when = new Date(item.when).toLocaleDateString();
+          item.where = this.optWhere.filter(where => where.source === item.where)[0].describe;
+          item.what = this.optWhat.filter(what => what.type === item.what)[0].describe;
+          item.status = this.optStatus.filter(status => status.code === item.status)[0].describe;
+          return item;
+        });
+        this.faultCnt = res.data.data.total;
+      })
+    }
+  }
+})
+
+</script>
+
+</html>
